@@ -18,6 +18,7 @@ int main() {
 	int num1 = 5;
 	int num2 = 8;
 
+	printf("%d\n%d\n\n", num1, num2);
 	swap(&num1, &num2);
 	printf("%d\n%d\n", num1, num2);
 }
