@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define MAX_INPUT_LEN 50
+
 int str_length(char *str) {
     int len = 0;
 
@@ -27,8 +29,15 @@ int main() {
     for (int i = 0; i < 6; i++) {
         printf("%c", *(ch_p + i));
     }
+    printf("\n");
 
     printf("%d\n", str_length(ch_p));
+
+    char input_buffer[MAX_INPUT_LEN];
+    fgets(input_buffer, MAX_INPUT_LEN, stdin);
+
+    printf("%d\n", str_length(input_buffer));
+
 
     return 0;
 }
