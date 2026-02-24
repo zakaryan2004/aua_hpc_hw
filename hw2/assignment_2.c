@@ -30,7 +30,7 @@
 typedef struct {
     int *arr_start;
     size_t count;
-    int64_t thread_sum;
+    // int64_t thread_sum;
 } thread_args;
 
 void rand_populate_arr(int *arr, size_t count) {
@@ -56,9 +56,14 @@ void *thread_job(void *arg) {
         local_sum += targs->arr_start[i];
     }
 
-    targs->thread_sum = local_sum;
+    int64_t *sum = malloc(sizeof(int64_t));
+    if (sum == NULL) {
+        perror("malloc failed");
+        exit(EXIT_FAILURE);
+    }
 
-    return NULL;
+    *sum = local_sum;
+    return (void*) sum;
 }
 
 double get_time_diff(struct timespec start, struct timespec end) {
@@ -101,11 +106,14 @@ int main() {
     }
 
     for (size_t i = 0; i < THREAD_COUNT; i++) {
-        if (pthread_join(threads[i], NULL) != 0) {
+        void *thread_sum;
+        if (pthread_join(threads[i], &thread_sum) != 0) {
             perror("pthread_join failed");
             exit(1);
         }
-        total_sum += thread_args_arr[i].thread_sum;
+        int64_t *partial = (int64_t *) thread_sum;
+        total_sum += *partial;
+        free(partial);
     }
 
     clock_gettime(CLOCK_MONOTONIC, &end);
