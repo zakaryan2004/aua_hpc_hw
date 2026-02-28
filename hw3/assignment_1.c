@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #define THREAD_COUNT 6
-#define DIE_FACES 100
+#define DIE_FACES 6
 #define ROUNDS 10
 
 pthread_t threads[THREAD_COUNT];
