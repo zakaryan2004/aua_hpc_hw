@@ -2,23 +2,20 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-
 #define THREAD_COUNT 6
-#define DIE_FACES 6
+#define DIE_FACES 100
 #define ROUNDS 10
-
 
 pthread_t threads[THREAD_COUNT];
 pthread_barrier_t dice_barrier;
-int scores[THREAD_COUNT];
-int max_die_val;
-int max_die_idx;
-int winner_thread = -1;
+int total_scores[THREAD_COUNT];
+int current_scores[THREAD_COUNT];
+int winner_thread_idx = -1;
+int winner_thread_val = -1;
 
 typedef struct {
     int tid;
 } thread_args;
-
 
 void* roll_die(void *arg) {
     thread_args *targs = (thread_args*) arg;
@@ -27,20 +24,8 @@ void* roll_die(void *arg) {
     for (int i = 0; i < ROUNDS; i++) {
         int rolled_val = rand() % DIE_FACES + 1;
         printf("Thread %d (%ld) Rolled %d\n", targs->tid, pthread_self(), rolled_val);
-        if (rolled_val > max_die_val) {
-            max_die_val = rolled_val;
-            max_die_idx = targs->tid;
-        }
+        current_scores[targs->tid] = rolled_val;
         pthread_barrier_wait(&dice_barrier);
-        if (max_die_idx == targs->tid) {
-            printf("Thread %d says: I won!\n", targs->tid);
-            max_die_idx = -1;
-            max_die_val = -1;
-            scores[targs->tid]++;
-            if (scores[targs->tid] > scores[winner_thread]) {
-                winner_thread = targs->tid;
-            }
-        }
         pthread_barrier_wait(&dice_barrier);
     }
 
@@ -50,8 +35,8 @@ void* roll_die(void *arg) {
 
 
 int main() {
-    // Create POSIX barirer which all threads (including main) use
-    pthread_barrier_init(&dice_barrier, NULL, THREAD_COUNT);
+    // Create a POSIX barirer which all threads (including main) use
+    pthread_barrier_init(&dice_barrier, NULL, THREAD_COUNT + 1);
     for (int i = 0; i < THREAD_COUNT; i++) {
         thread_args *args = malloc(sizeof(thread_args));
         if (args == NULL) {
@@ -66,13 +51,23 @@ int main() {
         }
     }
 
-    // for (int i = 0; i < ROUNDS; i++) {
-        // pthread_join(threads[i], NULL);
-        // pthread_barrier_wait(&dice_barrier);
-        // printf("Round %d: Thread %d won with value %d\n", i + 1, max_die_idx, max_die_val);
-        // scores[i]++;
-        // pthread_barrier_wait(&dice_barrier);
-    // }
+    for (int i = 0; i < ROUNDS; i++) {
+        pthread_barrier_wait(&dice_barrier);
+        int max_thread_val = -1, max_thread_idx = -1;
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            if(current_scores[i] > max_thread_val) {
+                max_thread_val = current_scores[i];
+                max_thread_idx = i;
+            }
+        }
+        printf("Round %d: Thread %d won with value %d\n", i + 1, max_thread_idx, max_thread_val);
+        total_scores[max_thread_idx]++;
+        if (total_scores[max_thread_idx] > winner_thread_val) {
+            winner_thread_idx = max_thread_idx;
+            winner_thread_val = total_scores[max_thread_idx];
+        }
+        pthread_barrier_wait(&dice_barrier);
+    }
 
     for (int i = 0; i < THREAD_COUNT; i++) {
         if (pthread_join(threads[i], NULL) != 0) {
@@ -81,6 +76,7 @@ int main() {
         }
     }
     
-    printf("Thread %d won overall, with %d wins\n", winner_thread, scores[winner_thread]);
+    printf("Thread %d won overall, with %d wins\n", winner_thread_idx, total_scores[winner_thread_idx]);
+    pthread_barrier_destroy(&dice_barrier);
 }
 
