@@ -1,0 +1,4 @@
+# Ignore large, generated files and output files
+random_text.txt
+random_text_out_mt.txt
+out_uniq.txt
