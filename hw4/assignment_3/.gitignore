@@ -1,0 +1,5 @@
+# Ignore large output files
+cat_gray_seq.ppm
+cat_gray_mt.ppm
+cat_gray_simd.ppm
+cat_gray_simd_mt.ppm
