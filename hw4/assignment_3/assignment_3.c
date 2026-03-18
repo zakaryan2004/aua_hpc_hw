@@ -27,6 +27,9 @@ typedef struct {
 } ThreadArgsSIMD;
 
 #define NUM_THREADS_FOR_MT_METHOD 4
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+#define NUM_THREADS_STR STR(NUM_THREADS_FOR_MT_METHOD)
 
 
 // ---------- UTILITY MACROS ----------
@@ -422,7 +425,7 @@ int main() {
     );
     write_ppm_file("cat_gray_seq.ppm", file_buf_seq, buf_size, width, height, max_color);
 
-    BENCHMARK_PPM("Multithreaded (4 Threads)",
+    BENCHMARK_PPM("Multithreaded ("NUM_THREADS_STR" Threads)",
                   grayscale_threads(file_buf_mt, buf_size));
     write_ppm_file("cat_gray_mt.ppm", file_buf_mt, buf_size, width, height, max_color);
 
@@ -433,7 +436,7 @@ int main() {
     write_ppm_file("cat_gray_simd.ppm", simd_combined_buf, buf_size, width, height,
                    max_color);
 
-    BENCHMARK_PPM("Multithreaded SIMD (AVX2) (4 Threads)",
+    BENCHMARK_PPM("Multithreaded SIMD (AVX2) ("NUM_THREADS_STR" Threads)",
                   grayscale_threads_simd(red_buf_simd_mt, green_buf_simd_mt,
                                          blue_buf_simd_mt, buf_size));
     PPMPixel *simd_mt_combined_buf = combine_channels_into_buf(
