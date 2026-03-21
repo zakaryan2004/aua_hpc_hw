@@ -3,3 +3,10 @@ cat_gray_seq.ppm
 cat_gray_mt.ppm
 cat_gray_simd.ppm
 cat_gray_simd_mt.ppm
+
+cat_rgba_1gb.pam
+cat_rgba_256mb.pam
+cat_rgba_gray_seq.pam
+cat_rgba_gray_mt.pam
+cat_rgba_gray_simd.pam
+cat_rgba_gray_simd_mt.pam
