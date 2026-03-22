@@ -273,9 +273,9 @@ void grayscale_simd(unsigned char *red_buf, unsigned char *green_buf,
     // into one 256-bit register to store back to memory in one write
     for (; i + 31 < buf_size; i += 32) {
         // load 16 pixels (8-bit ints, 48 bytes) into three 128-bit (16-byte) registers
-        __m128i r1 = _mm_loadu_si128((const __m128i*) (red_buf + i));
-        __m128i g1 = _mm_loadu_si128((const __m128i*) (green_buf + i));
-        __m128i b1 = _mm_loadu_si128((const __m128i*) (blue_buf + i));
+        __m128i r1 = _mm_load_si128((const __m128i*) (red_buf + i));
+        __m128i g1 = _mm_load_si128((const __m128i*) (green_buf + i));
+        __m128i b1 = _mm_load_si128((const __m128i*) (blue_buf + i));
 
         // extend 8-bit ints to 16-bit to prevent overflow during multiplication
         __m256i r1_16 = _mm256_cvtepu8_epi16(r1);
@@ -293,9 +293,9 @@ void grayscale_simd(unsigned char *red_buf, unsigned char *green_buf,
         __m256i gray1_16 = _mm256_srli_epi16(sum1, 8);
 
         // repeat for the next 16 pixels (next 48 bytes)
-        __m128i r2 = _mm_loadu_si128((const __m128i*) (red_buf + i + 16));
-        __m128i g2 = _mm_loadu_si128((const __m128i*) (green_buf + i + 16));
-        __m128i b2 = _mm_loadu_si128((const __m128i*) (blue_buf + i + 16));
+        __m128i r2 = _mm_load_si128((const __m128i*) (red_buf + i + 16));
+        __m128i g2 = _mm_load_si128((const __m128i*) (green_buf + i + 16));
+        __m128i b2 = _mm_load_si128((const __m128i*) (blue_buf + i + 16));
 
         __m256i r2_16 = _mm256_cvtepu8_epi16(r2);
         __m256i g2_16 = _mm256_cvtepu8_epi16(g2);
@@ -314,9 +314,9 @@ void grayscale_simd(unsigned char *red_buf, unsigned char *green_buf,
         // Swap the middle two 64-bit blocks to fix the lane crossing done by packus
         gray = _mm256_permute4x64_epi64(gray, _MM_SHUFFLE(3, 1, 2, 0));
 
-        _mm256_storeu_si256((__m256i*)(red_buf + i), gray);
-        _mm256_storeu_si256((__m256i*)(green_buf + i), gray);
-        _mm256_storeu_si256((__m256i*)(blue_buf + i), gray);
+        _mm256_store_si256((__m256i*)(red_buf + i), gray);
+        _mm256_store_si256((__m256i*)(green_buf + i), gray);
+        _mm256_store_si256((__m256i*)(blue_buf + i), gray);
     }
 
     // handle the tail sequentially
