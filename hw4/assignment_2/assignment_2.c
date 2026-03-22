@@ -9,20 +9,9 @@
 #include <time.h>
 
 typedef struct {
-    size_t a;
-    size_t c;
-    size_t g;
-    size_t t;
-} DNACount;
-
-typedef struct {
     unsigned char *text_start;
     int count;
 } ThreadArgs;
-
-DNACount MUTUAL_THREAD_DNA_COUNT;
-DNACount MUTUAL_THREAD_SIMD_DNA_COUNT;
-pthread_mutex_t mutex;
 
 void uppercase_char(unsigned char *ch);
 
@@ -36,35 +25,7 @@ void uppercase_char(unsigned char *ch);
         printf("%s:\n", method_name);                                               \
         printf("Elapsed: %f sec\n\n", get_time_diff(t_start, t_end));               \
     } while (0)
-
-#define DNA_SEQ_SWITCH(dna_char, struct_ptr)                    \
-    switch (dna_char) {                                         \
-         case 'A':                                              \
-            (struct_ptr)->a++;                                  \
-            break;                                              \
-        case 'C':                                               \
-            (struct_ptr)->c++;                                  \
-            break;                                              \
-        case 'G':                                               \
-            (struct_ptr)->g++;                                  \
-            break;                                              \
-        case 'T':                                               \
-            (struct_ptr)->t++;                                  \
-            break;                                              \
-        default:                                                \
-            printf("ERROR: INVALID DNA SEQUENCE. Halting!");    \
-            exit(EXIT_FAILURE);                                 \
-    }
 // ---------- END UTILITY MACROS ---------- 
-
-
-// ---------- SCALAR METHOD---------- 
-void dna_count_scalar(unsigned char *buffer, size_t len, DNACount *out) {
-    for (size_t i = 0; i < len; i++) {
-        DNA_SEQ_SWITCH(buffer[i], out);
-    }
-}
-// ---------- END SCALAR METHOD ---------- 
 
 
 // ---------- MULTITHREADING METHOD ---------- 
@@ -279,12 +240,6 @@ int main() {
         printf("ERROR: Loading random_text.txt into memory failed! Halting!");
         exit(EXIT_FAILURE);
     }
-
-    // DNACount scalar_res = {0};
-    // BENCHMARK_UPPERCASE(
-    //     "Scalar",
-    //     dna_count_scalar(file_buf, file_size, &scalar_res)
-    // );
 
     BENCHMARK_UPPERCASE(
         "Multithreaded (4 Threads)",
