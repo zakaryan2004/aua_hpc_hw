@@ -39,31 +39,20 @@ pthread_mutex_t mutex;
         printf("Elapsed: %f sec\n\n", get_time_diff(t_start, t_end));               \
     } while (0)
 
-#define DNA_SEQ_SWITCH(dna_char, struct_ptr)                    \
-    switch (dna_char) {                                         \
-         case 'A':                                              \
-            (struct_ptr)->a++;                                  \
-            break;                                              \
-        case 'C':                                               \
-            (struct_ptr)->c++;                                  \
-            break;                                              \
-        case 'G':                                               \
-            (struct_ptr)->g++;                                  \
-            break;                                              \
-        case 'T':                                               \
-            (struct_ptr)->t++;                                  \
-            break;                                              \
-        default:                                                \
-            printf("ERROR: INVALID DNA SEQUENCE. Halting!");    \
-            exit(EXIT_FAILURE);                                 \
-    }
+#define DNA_COUNTER(dna_char, struct_ptr)        \
+    do {                                            \
+        (struct_ptr)->a += (dna_char == 'A');       \
+        (struct_ptr)->c += (dna_char == 'C');       \
+        (struct_ptr)->g += (dna_char == 'G');       \
+        (struct_ptr)->t += (dna_char == 'T');       \
+    } while (0)
 // ---------- END UTILITY MACROS ---------- 
 
 
 // ---------- SCALAR METHOD---------- 
 void dna_count_scalar(const unsigned char *dna_seq, size_t len, DNACount *out) {
     for (size_t i = 0; i < len; i++) {
-        DNA_SEQ_SWITCH(dna_seq[i], out);
+        DNA_COUNTER(dna_seq[i], out);
     }
 }
 // ---------- END SCALAR METHOD ---------- 
@@ -77,7 +66,7 @@ void *thread_job(void *args) {
     DNACount out = {0};
 
     for (int i = 0; i < count; i++) {
-        DNA_SEQ_SWITCH(dna_seq[i], &out);
+        DNA_COUNTER(dna_seq[i], &out);
     }  
 
     pthread_mutex_lock(&mutex);
@@ -113,7 +102,7 @@ void dna_count_threads(const unsigned char *dna_seq, size_t len, int num_threads
 
 
     for (size_t i = num_threads * chunk; i < len; i++) {
-        DNA_SEQ_SWITCH(dna_seq[i], &remaining_out);
+        DNA_COUNTER(dna_seq[i], &remaining_out);
     }  
 
     pthread_mutex_lock(&mutex);
@@ -161,7 +150,7 @@ void dna_count_simd(const unsigned char *dna_seq, size_t len, DNACount *out) {
     }
 
     for (size_t i = (len / 32) * 32; i < len; i++) {
-        DNA_SEQ_SWITCH(dna_seq[i], out);
+        DNA_COUNTER(dna_seq[i], out);
     }
 }
 // ---------- END SIMD METHOD ---------- 
