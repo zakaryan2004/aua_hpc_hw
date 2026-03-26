@@ -41,7 +41,7 @@
         func_call;                                                                  \
         clock_gettime(CLOCK_MONOTONIC, &t_end);                                     \
         printf("%s:\n", method_name);                                               \
-        printf("Elapsed: %f sec\n", hpc_get_time_diff(t_start, t_end));             \
+        printf("Elapsed: %f sec\n\n", hpc_get_time_diff(t_start, t_end));           \
     } while (0)
 
 // Advanced Benchmarking macro that can support setup and teardown code as well
