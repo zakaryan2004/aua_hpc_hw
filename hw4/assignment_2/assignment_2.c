@@ -1,4 +1,5 @@
-#define _POSIX_C_SOURCE 199309L
+#define HPC_HW_LIB_IMPLEMENTATION
+#include <hpc_hw_lib.h>
 
 #include <immintrin.h>
 #include <pthread.h>
@@ -14,18 +15,6 @@ typedef struct {
 } ThreadArgs;
 
 void uppercase_char(unsigned char *ch);
-
-// ---------- UTILITY MACROS ----------
-#define BENCHMARK_UPPERCASE(method_name, func_call)                                 \
-    do {                                                                            \
-        struct timespec t_start, t_end;                                             \
-        clock_gettime(CLOCK_MONOTONIC, &t_start);                                   \
-        func_call;                                                                  \
-        clock_gettime(CLOCK_MONOTONIC, &t_end);                                     \
-        printf("%s:\n", method_name);                                               \
-        printf("Elapsed: %f sec\n\n", get_time_diff(t_start, t_end));               \
-    } while (0)
-// ---------- END UTILITY MACROS ---------- 
 
 
 // ---------- MULTITHREADING METHOD ---------- 
@@ -219,10 +208,6 @@ void save_buf_to_file(const unsigned char *buf, size_t buf_size, const char *fil
     fclose(file);
 }
 
-double get_time_diff(struct timespec start, struct timespec end) {
-    return (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-}
-
 void uppercase_char(unsigned char *ch) {
     if (*ch >= 'a' && *ch <= 'z') { // a=97, z=122
         *ch -= 32; // move to uppercase range
@@ -241,19 +226,19 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    BENCHMARK_UPPERCASE(
+    BENCHMARK(
         "Multithreaded (4 Threads)",
         uppercase_threads(file_buf_mt, file_size, 4)
     );
 
     save_buf_to_file(file_buf_mt, file_size, "random_text_out_mt.txt");
 
-    BENCHMARK_UPPERCASE(
+    BENCHMARK(
         "SIMD (AVX2)",
         uppercase_simd(file_buf_simd, file_size)
     );
  
-    BENCHMARK_UPPERCASE(
+    BENCHMARK(
         "Multithreaded SIMD (AVX2) (4 Threads)",
         uppercase_threads_simd(file_buf_simd_mt, file_size, 4)
     );
