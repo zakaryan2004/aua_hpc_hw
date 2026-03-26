@@ -1,4 +1,5 @@
-#define _POSIX_C_SOURCE 199309L
+#define HPC_HW_LIB_IMPLEMENTATION
+#include <hpc_hw_lib.h>
 
 #include <immintrin.h>
 #include <pthread.h>
@@ -25,20 +26,6 @@ pthread_mutex_t mutex;
 
 
 // ---------- UTILITY MACROS ----------
-#define BENCHMARK_DNA(method_name, func_call, res) /* (method_name, func, ...) */   \
-    do {                                                                            \
-        /* DNACount res = {0}; */                                                   \
-        struct timespec t_start, t_end;                                             \
-        clock_gettime(CLOCK_MONOTONIC, &t_start);                                   \
-        /* func(__VA_ARGS__, &res); */                                              \
-        func_call;                                                                  \
-        clock_gettime(CLOCK_MONOTONIC, &t_end);                                     \
-        printf("%s:\n", method_name);                                               \
-        printf("Counts (A C G T):\n");                                              \
-        printf("%zu %zu %zu %zu\n", (res).a, (res).c, (res).g, (res).t);            \
-        printf("Elapsed: %f sec\n\n", get_time_diff(t_start, t_end));               \
-    } while (0)
-
 #define DNA_COUNTER(dna_char, struct_ptr)        \
     do {                                            \
         (struct_ptr)->a += (dna_char == 'A');       \
@@ -254,10 +241,6 @@ const unsigned char* load_file_to_buf(const char *file_name, size_t *file_size) 
     buffer[*file_size] = '\0';
     return buffer;
 }
-
-double get_time_diff(struct timespec start, struct timespec end) {
-    return (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-}
 // ---------- END HELPER FUNCTIONS ---------- 
 
 int main() {
@@ -269,31 +252,43 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // BENCHMARK_DNA("Scalar", dna_count_scalar, file_buf, file_size);
-    DNACount scalar_res = {0};
-    BENCHMARK_DNA(
+    BENCHMARK_ADVANCED(
         "Scalar",
+        DNACount scalar_res = {0};,
         dna_count_scalar(file_buf, file_size, &scalar_res),
-        scalar_res
+        printf("Counts (A C G T):\n%zu %zu %zu %zu\n",
+                scalar_res.a, scalar_res.c, scalar_res.g, scalar_res.t);
     );
-
-    BENCHMARK_DNA(
+    
+    BENCHMARK_ADVANCED(
         "Multithreaded (4 Threads)",
+        {},
         dna_count_threads(file_buf, file_size, 4),
-        MUTUAL_THREAD_DNA_COUNT
+        printf("Counts (A C G T):\n%zu %zu %zu %zu\n",
+                MUTUAL_THREAD_DNA_COUNT.a,
+                MUTUAL_THREAD_DNA_COUNT.c,
+                MUTUAL_THREAD_DNA_COUNT.g,
+                MUTUAL_THREAD_DNA_COUNT.t
+        );
     );
 
-    DNACount simd_res = {0};
-    BENCHMARK_DNA(
+    BENCHMARK_ADVANCED(
         "SIMD (AVX2)",
+        DNACount simd_res = {0};,
         dna_count_simd(file_buf, file_size, &simd_res),
-        simd_res
-    );
- 
-    BENCHMARK_DNA(
-        "Multithreaded SIMD (AVX2) (4 Threads)",
-        dna_count_threads_simd(file_buf, file_size, 4),
-        MUTUAL_THREAD_SIMD_DNA_COUNT
+        printf("Counts (A C G T):\n%zu %zu %zu %zu\n",
+                simd_res.a, simd_res.c, simd_res.g, simd_res.t);
     );
 
+    BENCHMARK_ADVANCED(
+        "Multithreaded SIMD (AVX2) (4 Threads)",
+        {},
+        dna_count_threads_simd(file_buf, file_size, 4),
+        printf("Counts (A C G T):\n%zu %zu %zu %zu\n",
+                MUTUAL_THREAD_SIMD_DNA_COUNT.a,
+                MUTUAL_THREAD_SIMD_DNA_COUNT.c,
+                MUTUAL_THREAD_SIMD_DNA_COUNT.g,
+                MUTUAL_THREAD_SIMD_DNA_COUNT.t
+        );
+    );
 }
