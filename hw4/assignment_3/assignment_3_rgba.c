@@ -253,10 +253,15 @@ void grayscale_simd(PPMPixel *buf, size_t buf_size) {
     // 0xFF000000 is 255 in the last byte and 0 on the rest (little-endian)
     const __m256i alpha_mask = _mm256_set1_epi32(0xFF000000);
 
-    // process 8 pixels at a time
-    for (; i + 7 < buf_size; i += 8) {
+    // process 24 pixels during each iteration by using three 256-bit registers
+    // to load 32 bytes (8 pixels) at a time, and perform the same operations on 
+    // all three registers sequentially.
+    // This improves performance since we load and store in larger chunks
+    for (; i + 23 < buf_size; i += 24) {
         // load 8 pixels (32 bits) into 128-bit register
-        __m256i pixels = _mm256_load_si256((const __m256i*)(buf + i));
+        __m256i pixels_1 = _mm256_load_si256((const __m256i*)(buf + i));
+        __m256i pixels_2 = _mm256_load_si256((const __m256i*)(buf + i + 8));
+        __m256i pixels_3 = _mm256_load_si256((const __m256i*)(buf + i + 16));
         // __m128i px_8 = _mm_load_si128((const __m128i*)(buf + i));
 
         // use the _mm256_maddubs_epi16 (multiply-add) instruction
@@ -267,30 +272,44 @@ void grayscale_simd(PPMPixel *buf, size_t buf_size) {
         //  R3*38+G3*75, B3*14+0, R4*38+G4*75, B4*14+0,
         //  R5*38+G5*75, B5*14+0, R6*38+G6*75, B6*14+0,
         //  R7*38+G7*75, B7*14+0, R8*38+G8*75, B8*14+0]
-        __m256i partial_sum = _mm256_maddubs_epi16(pixels, coeffs);
+        __m256i partial_sum_1 = _mm256_maddubs_epi16(pixels_1, coeffs);
+        __m256i partial_sum_2 = _mm256_maddubs_epi16(pixels_2, coeffs);
+        __m256i partial_sum_3 = _mm256_maddubs_epi16(pixels_3, coeffs);
         // __m256i partial_sum = _mm256_madd_epi16(px_16, coeffs);
     
         // Shift right by 2 bytes (16 bits) to line up the (B*14) under the (R*38+G*75)
-        __m256i shifted = _mm256_srli_si256(partial_sum, 2);
+        __m256i shifted_1 = _mm256_srli_si256(partial_sum_1, 2);
+        __m256i shifted_2 = _mm256_srli_si256(partial_sum_2, 2);
+        __m256i shifted_3 = _mm256_srli_si256(partial_sum_3, 2);
 
         // Vertically add them together. Because of the shift, there will be garbage
         // values in every other position.
         // But we only need every 4 bytes, which will have correct values
-        __m256i sum16 = _mm256_add_epi16(partial_sum, shifted);
+        __m256i sum16_1 = _mm256_add_epi16(partial_sum_1, shifted_1);
+        __m256i sum16_2 = _mm256_add_epi16(partial_sum_2, shifted_2);
+        __m256i sum16_3 = _mm256_add_epi16(partial_sum_3, shifted_3);
 
         // After that we need to shift right by 7 to divide by 128
         // since we multiplied by 128 at the beginning to convert to integers
-        __m256i gray16 = _mm256_srli_epi16(sum16, 7);
+        __m256i gray16_1 = _mm256_srli_epi16(sum16_1, 7);
+        __m256i gray16_2 = _mm256_srli_epi16(sum16_2, 7);
+        __m256i gray16_3 = _mm256_srli_epi16(sum16_3, 7);
 
         // Current result: [gray1, 0, gray2, 0, gray3, 0, gray4, 0, ...]
         // Using shuffle: [gray1, gray1, gray1, 0, gray2, gray2, gray2, 0, ...]
-        __m256i gray_rgb = _mm256_shuffle_epi8(gray16, rgb_shuffle_mask);
+        __m256i gray_rgb_1 = _mm256_shuffle_epi8(gray16_1, rgb_shuffle_mask);
+        __m256i gray_rgb_2 = _mm256_shuffle_epi8(gray16_2, rgb_shuffle_mask);
+        __m256i gray_rgb_3 = _mm256_shuffle_epi8(gray16_3, rgb_shuffle_mask);
 
         // Use OR to "blend" the grayscale values with 255 in the last byte
-        __m256i gray8_rgba = _mm256_or_si256(gray_rgb, alpha_mask);
+        __m256i gray8_rgba_1 = _mm256_or_si256(gray_rgb_1, alpha_mask);
+        __m256i gray8_rgba_2 = _mm256_or_si256(gray_rgb_2, alpha_mask);
+        __m256i gray8_rgba_3 = _mm256_or_si256(gray_rgb_3, alpha_mask);
 
         // Store 256 bits back to memory
-        _mm256_store_si256((__m256i*)(buf + i), gray8_rgba);
+        _mm256_store_si256((__m256i*)(buf + i), gray8_rgba_1);
+        _mm256_store_si256((__m256i*)(buf + i + 8), gray8_rgba_2);
+        _mm256_store_si256((__m256i*)(buf + i + 16), gray8_rgba_3);
     }
 
     // handle the tail sequentially
