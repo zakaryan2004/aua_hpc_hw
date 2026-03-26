@@ -1,4 +1,5 @@
-#define _POSIX_C_SOURCE 199309L
+#define HPC_HW_LIB_IMPLEMENTATION
+#include <hpc_hw_lib.h>
 
 #include <immintrin.h>
 #include <pthread.h>
@@ -27,21 +28,12 @@ typedef struct {
 } ThreadArgsSIMD;
 
 #define NUM_THREADS_FOR_MT_METHOD 4
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
-#define NUM_THREADS_STR STR(NUM_THREADS_FOR_MT_METHOD)
 
 
 // ---------- UTILITY MACROS ----------
-#define BENCHMARK_PPM(method_name, func_call)                                       \
-    do {                                                                            \
-        struct timespec t_start, t_end;                                             \
-        clock_gettime(CLOCK_MONOTONIC, &t_start);                                   \
-        func_call;                                                                  \
-        clock_gettime(CLOCK_MONOTONIC, &t_end);                                     \
-        printf("%s:\n", method_name);                                               \
-        printf("Elapsed: %f sec\n\n", get_time_diff(t_start, t_end));               \
-    } while (0)
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+#define NUM_THREADS_STR STR(NUM_THREADS_FOR_MT_METHOD)
 // ---------- END UTILITY MACROS ---------- 
 
 
@@ -169,10 +161,6 @@ unsigned char* copy_buf(unsigned char *buf, size_t buf_size) {
 
     memcpy(new_buf, buf, buf_size);
     return new_buf;
-}
-
-double get_time_diff(struct timespec start, struct timespec end) {
-    return (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 }
 
 void warmup_ppm_buffer(PPMPixel *buf, size_t buf_size) {
@@ -397,7 +385,7 @@ int main() {
         (PPMPixel *)copy_buf((unsigned char *)file_buf_seq, buf_size * 3);
 
     unsigned char *red_buf_simd, *green_buf_simd, *blue_buf_simd;
-    BENCHMARK_PPM("Separating channels for SIMD methods",
+    BENCHMARK("Separating channels for SIMD methods",
         separate_buf_into_channels(file_buf_seq, &buf_size, &red_buf_simd,
                                    &green_buf_simd, &blue_buf_simd));
 
@@ -419,24 +407,21 @@ int main() {
     warmup_channels(red_buf_simd_mt, green_buf_simd_mt, blue_buf_simd_mt, buf_size);
     printf("Warmup done!\n\n");
 
-    BENCHMARK_PPM(
-        "Scalar",
-        grayscale_seq(file_buf_seq, buf_size)
-    );
+    BENCHMARK("Scalar", grayscale_seq(file_buf_seq, buf_size));
     write_ppm_file("cat_gray_seq.ppm", file_buf_seq, buf_size, width, height, max_color);
 
-    BENCHMARK_PPM("Multithreaded ("NUM_THREADS_STR" Threads)",
+    BENCHMARK("Multithreaded ("NUM_THREADS_STR" Threads)",
                   grayscale_threads(file_buf_mt, buf_size));
     write_ppm_file("cat_gray_mt.ppm", file_buf_mt, buf_size, width, height, max_color);
 
-    BENCHMARK_PPM("SIMD (AVX2)",
+    BENCHMARK("SIMD (AVX2)",
                   grayscale_simd(red_buf_simd, green_buf_simd, blue_buf_simd, buf_size));
     PPMPixel *simd_combined_buf =
         combine_channels_into_buf(red_buf_simd, green_buf_simd, blue_buf_simd, buf_size);
     write_ppm_file("cat_gray_simd.ppm", simd_combined_buf, buf_size, width, height,
                    max_color);
 
-    BENCHMARK_PPM("Multithreaded SIMD (AVX2) ("NUM_THREADS_STR" Threads)",
+    BENCHMARK("Multithreaded SIMD (AVX2) ("NUM_THREADS_STR" Threads)",
                   grayscale_threads_simd(red_buf_simd_mt, green_buf_simd_mt,
                                          blue_buf_simd_mt, buf_size));
     PPMPixel *simd_mt_combined_buf = combine_channels_into_buf(
