@@ -28,7 +28,9 @@
 #define _POSIX_C_SOURCE 199309L
 #endif
 
+#include <errno.h>
 #include <time.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 // Public Macros
@@ -61,11 +63,17 @@
 
 // Function declarations
 HPC_HW_DEF double hpc_get_time_diff(struct timespec start, struct timespec end);
+HPC_HW_DEF void die(char *msg);
 
 #ifdef HPC_HW_LIB_IMPLEMENTATION
 
 HPC_HW_DEF double hpc_get_time_diff(struct timespec start, struct timespec end) {
     return (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+}
+
+HPC_HW_DEF void die(char *msg) {
+    perror(msg);
+    exit(EXIT_FAILURE);
 }
 
 #endif // HPC_HW_LIB_IMPLEMENTATION
