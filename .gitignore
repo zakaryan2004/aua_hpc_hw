@@ -10,3 +10,6 @@
 # Unignore Makefile
 !Makefile
 
+# Ignore PPM/PAM
+*.ppm
+*.pam
