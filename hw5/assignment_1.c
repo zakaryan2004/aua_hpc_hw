@@ -3,7 +3,7 @@
 #include <omp.h>
 #include <stdio.h>
 
-#define N 200000
+#define N 20000
 
 typedef enum {
     NONE = 0, FAST, MEDIUM, SLOW
@@ -41,8 +41,9 @@ int main() {
             }
             tlog("Logs initialized!");
         }
-
-        #pragma omp barrier
+        // Since we haven't specified nowait, a barrier is
+        // automatically added here, so we are sure that
+        // all processing has finished
         
         tlog("Starting log processing...");
         #pragma omp for
@@ -57,10 +58,8 @@ int main() {
                 entries[i].speed = SLOW;
             }
         }
-        // Since we haven't specified nowait, a barrier is
-        // automatically added here, so we are sure that 
-        // all processing has finished
-        
+        // A barrier is automatically added here
+
         #pragma omp single
         {
             int count_f = 0, count_m = 0, count_s = 0;

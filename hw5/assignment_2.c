@@ -23,7 +23,7 @@ int main() {
     if (entries == NULL) {
         die("OrderEntry malloc failed");
     }
-    int shared_threshold_km = 0;
+    float shared_threshold_km = 0;
     int thread_high_count[REQUESTED_NUM_THREADS] = {0};
 
     #pragma omp parallel num_threads(REQUESTED_NUM_THREADS)
@@ -34,7 +34,7 @@ int main() {
             tlog("Initializing all orders...");
             for (int i = 0; i < N; i++) {
                 // 0.1km to 50.0km with 100m precision
-                float distance = (rand() % 500 + 1) / 10;
+                float distance = (rand() % 500 + 1) / 10.0f;
                 entries[i] = (OrderEntry){
                     .order_id = i,
                     .distance_km = distance,
@@ -44,7 +44,7 @@ int main() {
             tlog("Orders initialized!");
         }
         // Since we haven't specified nowait, a barrier is
-        // automatically added here, so we are sure that 
+        // automatically added here, so we are sure that
         // all processing has finished
         
         #pragma omp single
@@ -53,6 +53,7 @@ int main() {
             shared_threshold_km = 20.0;
             tlog("Shared threshold set!");
         }
+        // A barrier is automatically added here
 
         tlog("Starting order classification...");
         #pragma omp for
@@ -64,17 +65,16 @@ int main() {
                 entries[i].priority = NORMAL;
             }
         }
-        // Since we haven't specified nowait, a barrier is
-        // automatically added here, so we are sure that 
-        // all processing has finished
+        // A barrier is automatically added here
         
         #pragma omp single
         {
             printf("All threads have finished order classification\n");
         }
+        // A barrier is automatically added here
 
         int local_thread_count = 0;
-        #pragma omp for
+        #pragma omp for nowait
         for (int i = 0; i < N; i++) {
             if (entries[i].priority == HIGH) {
                 local_thread_count++;
@@ -82,6 +82,7 @@ int main() {
         }
         thread_high_count[omp_get_thread_num()] = local_thread_count;
         
+        // Wait for all threads to finish counting and storing their results
         #pragma omp barrier
 
         #pragma omp single
