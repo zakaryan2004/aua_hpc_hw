@@ -61,6 +61,18 @@
         printf("Elapsed: %f sec\n\n", hpc_get_time_diff(t_start, t_end));           \
     } while (0)
 
+// A generic macro to print an array of any type. It accepts a pointer to the
+// array, the size as size_t, and the format string to be used in printf.
+#define PRINT_ARR(arr, size, fmt)                   \
+    do {                                            \
+        printf("[");                                \
+        for (size_t i = 0; i < (size); i++) {       \
+            printf(fmt, (arr)[i]);                  \
+            if (i < (size) - 1) printf(", ");       \
+        }                                           \
+        printf("]\n");                              \
+    } while (0)
+
 // Function declarations
 HPC_HW_DEF double hpc_get_time_diff(struct timespec start, struct timespec end);
 HPC_HW_DEF void die(char *msg);
