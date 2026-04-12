@@ -1,29 +1,35 @@
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <omp.h>
 
-#define N 50000000
 #define NUM_THREADS 4
 
-
-int fib(int n) {
-    if (n == 0) {
-        return 0;
-    }
-    if (n == 1) {
-        return 1;
+uint64_t fib_seq(int n) {
+    if (n < 0) {
+        printf("Can't get Fibonacci with negative index!\n");
+        exit(EXIT_FAILURE);
     }
 
-    int n1, n2;
-
-    #pragma omp task shared(n1) if (n > 10)
-    {
-        n1 = fib(n - 1);
+    if (n < 2) {
+        return n;
     }
 
-    #pragma omp task shared(n2) if (n > 10)
-    {
-        n2 = fib(n - 2);
+    return fib_seq(n - 1) + fib_seq(n - 2);
+}
+
+uint64_t fib(int n) {
+    if (n <= 10) {
+        return fib_seq(n);
     }
+
+    uint64_t n1, n2;
+
+    #pragma omp task shared(n1)
+    n1 = fib(n - 1);
+
+    #pragma omp task shared(n2)
+    n2 = fib(n - 2);
 
     #pragma omp taskwait
 
@@ -31,11 +37,12 @@ int fib(int n) {
 }
 
 int main() {
-    int num, result;
+    int num;
+    uint64_t result;
     printf("Enter an integer: ");
     scanf("%d", &num);
 
-    #pragma omp parallel num_threads(4)
+    #pragma omp parallel num_threads(NUM_THREADS)
     {
         #pragma omp single
         {
@@ -43,7 +50,7 @@ int main() {
         }
     }
 
-    printf("n-th Fibonacci number: %d\n", result);
+    printf("n-th Fibonacci number: %lu\n", result);
 
     return 0;
 }
